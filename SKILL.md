@@ -372,23 +372,3 @@ feishu[writer-feishu]: received message from ...
 │  Agent "writer" processes the message and replies           │
 └─────────────────────────────────────────────────────────────┘
 ```
-
-## Skill 搜索路径补充说明
-
-Agent 可用的 skills 按以下优先级查找：
-
-1. `~/.openclaw/workspace/agents/<agent>/skills/` — agent 专属（最高优先级）
-2. `~/.openclaw/workspace/skills/` — workspace 共享
-3. `~/.openclaw/skills/` — 全局共享（基础层）
-
-这意味着即使 agent 的 `workspace` 指向 `agents/writer/`，`~/.openclaw/workspace/skills/` 下的 skill 仍然对该 agent 有效。
-
-## 参考配置
-
-当前环境中已配置的 agents 结构供参考（agent id → 飞书 accountId）：
-- **main** → `feishu[kimiclaw_v2]`
-- **XiaoYou** → `feishu[xiaoyou]`
-- **player** → `feishu[player]`
-- **writer** → `feishu[writer]`
-
-它们的 workspace 均统一为 `/root/.openclaw/workspace/agents/<agent>/`。
