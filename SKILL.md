@@ -67,49 +67,38 @@ description: 在 OpenClaw 中创建一个新的 Agent 智能体，包括 workspa
 
 ```json
 {
-  "id": "writer",
-  "name": "writer",
-  "workspace": "/root/.openclaw/workspace/agents/writer",
-  "agentDir": "/root/.openclaw/agents/writer",
-  "model": "kimi-coding/k2p5",
+  "id": "<your-agent-id>",
+  "name": "<your-agent-name>",
+  "workspace": "/root/.openclaw/workspace/agents/<your-agent-id>",
+  "agentDir": "/root/.openclaw/agents/<your-agent-id>",
+  "model": "<your-model-name>",
   "memorySearch": {
     "enabled": true
   }
 }
 ```
 
-字段说明：
-- `id`: Agent 的唯一标识
-- `name`: 显示名称（可选，默认等于 id）
-- `workspace`: **灵魂工作区路径**，系统会从这里读取人格文件
+> **占位符说明**：
+> - `<your-agent-id>`: Agent 的唯一标识，如 `writer`, `assistant`, `novelist`
+> - `<your-agent-name>`: 显示名称（可选，默认等于 id）
+> - `<your-model-name>`: 模型名称，如 `kimi-coding/k2p5`, `gpt-4` 等
+
+**字段说明**：
+- `id`: Agent 的唯一标识符，全系统唯一，不能与其他 agent 重复
+- `name`: 显示名称（可选），在日志和回复中显示
+- `workspace`: **灵魂工作区路径**，系统会从这里读取人格文件（`IDENTITY.md`, `SOUL.md` 等）
 - `agentDir`: **运行时路径**，系统会自动创建 `sessions/` 和 `models.json`
-- `model`: 该 Agent 使用的默认模型
-- `memorySearch.enabled`: 是否开启向量记忆检索
+- `model`: 该 Agent 使用的默认模型，决定其推理能力和风格
+- `memorySearch.enabled`: 是否开启向量记忆检索，建议开启
 
-### 第 2 步：绑定到飞书账号（Bindings）
+### 第 2 步：配置飞书 Channel 账号
 
-在 `bindings` 数组中添加：
-
-```json
-{
-  "agentId": "writer",
-  "match": {
-    "channel": "feishu",
-    "accountId": "writer"
-  }
-}
-```
-
-这表示：飞书账号 `writer` 收到的消息，会路由给 `writer` agent。
-
-### 第 3 步：配置飞书账号（Channels）
-
-在 `channels.feishu.accounts` 下添加账号：
+在 `channels.feishu.accounts` 下添加账号（与 `agents` 配置独立，可复用给多个 agents）：
 
 ```json
-"writer": {
-  "appId": "cli_a95710ef7db95bb3",
-  "appSecret": "VXQvqVxnJ3KG3iRGZQFvUShKgdtsueeF",
+"<your-feishu-account-id>": {
+  "appId": "<your-app-id>",
+  "appSecret": "<your-app-secret>",
   "dmPolicy": "pairing",
   "groupPolicy": "pairing",
   "allowFrom": [],
@@ -117,16 +106,81 @@ description: 在 OpenClaw 中创建一个新的 Agent 智能体，包括 workspa
 }
 ```
 
-策略说明：
-- `dmPolicy`: 私聊策略
-  - `"pairing"` — 需要先完成配对（首次私聊会要求输入配对码）
-  - `"open"` — 任何人都可以私聊
-  - `"allowlist"` — 仅 `allowFrom` 列表中的用户可私聊
-- `groupPolicy`: 群聊策略（同上）
-- `allowFrom`: 私聊白名单用户 open_id 数组
-- `groupAllowFrom`: 群聊白名单用户 open_id 数组
+> **占位符说明**：
+> - `<your-feishu-account-id>`: 飞书账号标识，任意字符串，如 `mybot`, `writer-feishu`
+> - `<your-app-id>`: 从飞书开放平台获取的 AppID（格式如 `cli_xxxxxxxx`）
+> - `<your-app-secret>`: 从飞书开放平台获取的 AppSecret
 
-## 完整创建流程（以 writer 为例）
+**Channel 策略详细说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `appId` | string | ✅ | 飞书应用的 AppID，从[飞书开放平台](https://open.feishu.cn/app)获取 |
+| `appSecret` | string | ✅ | 飞书应用的 AppSecret，与 AppID 配对 |
+| `dmPolicy` | string | ✅ | 私聊策略，见下表 |
+| `groupPolicy` | string | ✅ | 群聊策略，见下表 |
+| `allowFrom` | string[] | 可选 | 私聊白名单，仅这些 open_id 可私聊 |
+| `groupAllowFrom` | string[] | 可选 | 群聊白名单，仅这些 open_id 可在群中@机器人 |
+| `requireMention` | boolean | 可选 | 群聊中是否需要@机器人才响应 |
+
+**Policy 策略类型详解**：
+
+| 策略值 | 含义 | 使用场景 |
+|--------|------|----------|
+| `"pairing"` | 需要先完成配对 | 私密 agent，需要控制访问权限 |
+| `"open"` | 任何人都可以交互 | 公开 agent，如客服、信息查询 |
+| `"allowlist"` | 仅白名单用户可交互 | 特定人群使用，结合 `allowFrom` 配置 |
+
+**注意事项**：
+- 首次使用 `pairing` 策略时，私聊会收到配对码提示，需要在 Kimi Claw Web 设置页查看配对码并输入
+- `allowFrom` 和 `groupAllowFrom` 中填写的是用户的 open_id（格式 `ou_xxxxxxxx`）
+
+### 第 3 步：绑定 Agent 到飞书账号（Bindings）
+
+在 `bindings` 数组中添加，将 agent 与飞书 channel 账号关联：
+
+```json
+{
+  "agentId": "<your-agent-id>",
+  "match": {
+    "channel": "feishu",
+    "accountId": "<your-feishu-account-id>"
+  }
+}
+```
+
+> **绑定逻辑说明**：
+> - `agentId`: 指向 `agents.list` 中定义的 agent id
+> - `match.channel`: 渠道类型，这里是 `feishu`
+> - `match.accountId`: 指向 `channels.feishu.accounts` 中定义的账号 key
+
+**绑定匹配规则**：
+
+当飞书 channel 收到消息时，OpenClaw 按以下顺序匹配：
+
+1. 确定消息来源的飞书账号（`accountId`）
+2. 在 `bindings` 中查找 `match.accountId` 匹配的条目
+3. 根据 `agentId` 找到对应的 agent 配置
+4. 将消息路由到该 agent 的 workspace 处理
+
+**一对一 vs 一对多**：
+
+- **一对一绑定**（推荐）：一个飞书账号绑定一个 agent
+  ```json
+  { "agentId": "writer", "match": { "channel": "feishu", "accountId": "writer-feishu" } }
+  ```
+
+- **一对多绑定**：多个飞书账号可以绑定到同一个 agent
+  ```json
+  { "agentId": "assistant", "match": { "channel": "feishu", "accountId": "assistant-bot-1" } }
+  { "agentId": "assistant", "match": { "channel": "feishu", "accountId": "assistant-bot-2" } }
+  ```
+
+- **多对一绑定**：一个飞书账号根据条件路由到不同 agents（需要高级匹配规则）
+
+## 完整创建流程（以创建 writer agent 为例）
+
+以下示例假设你要创建一个名为 `writer` 的 agent，绑定到飞书账号 `writer-feishu`：
 
 ### Step 1: 创建目录
 
@@ -158,10 +212,47 @@ EOF
 
 ### Step 4: 修改 `~/.openclaw/openclaw.json`
 
-分别修改三处：
-1. `agents.list` — 注册 agent
-2. `bindings` — 绑定到飞书账号
-3. `channels.feishu.accounts` — 配置飞书 appId/appSecret
+**① 注册 agent**（添加到 `agents.list`）：
+
+```json
+{
+  "id": "writer",
+  "name": "writer",
+  "workspace": "/root/.openclaw/workspace/agents/writer",
+  "agentDir": "/root/.openclaw/agents/writer",
+  "model": "kimi-coding/k2p5",
+  "memorySearch": {
+    "enabled": true
+  }
+}
+```
+
+**② 配置飞书 channel**（添加到 `channels.feishu.accounts`）：
+
+```json
+"writer-feishu": {
+  "appId": "cli_xxxxxxxxxxxxxxxx",
+  "appSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "dmPolicy": "pairing",
+  "groupPolicy": "pairing",
+  "allowFrom": [],
+  "groupAllowFrom": []
+}
+```
+
+> ⚠️ 替换 `cli_xxxxxxxxxxxxxxxx` 和 `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` 为你从飞书开放平台获取的真实凭证。
+
+**③ 绑定 agent 到飞书**（添加到 `bindings`）：
+
+```json
+{
+  "agentId": "writer",
+  "match": {
+    "channel": "feishu",
+    "accountId": "writer-feishu"
+  }
+}
+```
 
 ### Step 5: 重启 Gateway
 
@@ -176,33 +267,38 @@ openclaw gateway restart
 查看日志确认 WebSocket 已建立：
 
 ```bash
-cat /root/.openclaw/logs/openclaw.log | grep "feishu\[writer\]"
+cat /root/.openclaw/logs/openclaw.log | grep "feishu\[writer-feishu\]"
 ```
 
 预期输出：
 ```
-feishu[writer]: starting WebSocket connection...
-feishu[writer]: received message from ...
+feishu[writer-feishu]: starting WebSocket connection...
+feishu[writer-feishu]: received message from ...
 ```
 
 ## 常见错误与排查
 
 ### 1. "Channel is required when multiple channels are configured"
 - 如果为 agent 创建了 cron job，但没有显式指定 `channel`，会报此错
-- 解决：在 cron 配置中添加 `"channel": "feishu"` 和 `"accountId": "writer"`
+- 解决：在 cron 配置中添加 `"channel": "feishu"` 和 `"accountId": "writer-feishu"`
 
 ### 2. 飞书消息没有路由到新 agent
 - 检查 `bindings` 中的 `accountId` 是否与 `channels.feishu.accounts` 的 key 一致
 - 检查 `agentId` 是否与 `agents.list` 中的 `id` 一致
 - 检查 `openclaw.json` 语法是否合法（逗号、括号匹配）
+- 检查 `channels.feishu.enabled` 是否为 `true`
 
 ### 3. 配对失败
 - 如果 `dmPolicy` 是 `pairing`，首次私聊需要配对码
 - 配对码可通过 Kimi Claw Web 设置页查看，或让已配对用户转发
 
-## 示例：writer 的完整最小配置
+### 4. "appId or appSecret not configured"
+- 检查飞书应用的凭证是否正确填写
+- 检查飞书应用是否在[开放平台](https://open.feishu.cn/app)启用并发布了版本
 
-### openclaw.json 片段
+## 完整最小配置示例
+
+以下是一个完整可运行的 `openclaw.json` 片段，展示 agent、channel、bindings 三者的关联：
 
 ```json
 {
@@ -214,19 +310,14 @@ feishu[writer]: received message from ...
         "workspace": "/root/.openclaw/workspace/agents/writer",
         "agentDir": "/root/.openclaw/agents/writer",
         "model": "kimi-coding/k2p5",
-        "memorySearch": {
-          "enabled": true
-        }
+        "memorySearch": { "enabled": true }
       }
     ]
   },
   "bindings": [
     {
       "agentId": "writer",
-      "match": {
-        "channel": "feishu",
-        "accountId": "writer"
-      }
+      "match": { "channel": "feishu", "accountId": "writer-feishu" }
     }
   ],
   "channels": {
@@ -234,11 +325,11 @@ feishu[writer]: received message from ...
       "enabled": true,
       "domain": "feishu",
       "requireMention": false,
-      "defaultAccount": "kimiclaw_v2",
+      "defaultAccount": "main-bot",
       "accounts": {
-        "writer": {
-          "appId": "cli_a95710ef7db95bb3",
-          "appSecret": "VXQvqVxnJ3KG3iRGZQFvUShKgdtsueeF",
+        "writer-feishu": {
+          "appId": "cli_xxxxxxxxxxxxxxxx",
+          "appSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
           "dmPolicy": "pairing",
           "groupPolicy": "pairing",
           "allowFrom": [],
@@ -250,21 +341,36 @@ feishu[writer]: received message from ...
 }
 ```
 
-### 目录结构
+**关键对应关系图解**：
 
 ```
-~/.openclaw/workspace/agents/writer/
-├── AGENTS.md
-├── IDENTITY.md
-├── SOUL.md
-├── MEMORY.md
-├── USER.md
-├── TOOLS.md
-├── HEARTBEAT.md
-├── memory/
-├── diary/
-└── .openclaw/
-    └── workspace-state.json
+┌─────────────────────────────────────────────────────────────┐
+│  Message arrives at Feishu (appId: cli_xxxxxxxx)            │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Channel: channels.feishu.accounts["writer-feishu"]         │
+│  → Identified accountId: "writer-feishu"                    │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Binding: bindings.find(b => b.match.accountId === "writer-feishu")
+│  → Found: { agentId: "writer", ... }                        │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Agent: agents.list.find(a => a.id === "writer")            │
+│  → Found: { workspace: "/root/.openclaw/workspace/agents/writer" }
+│  → Load SOUL.md, IDENTITY.md, MEMORY.md from this path      │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Agent "writer" processes the message and replies           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Skill 搜索路径补充说明
@@ -279,7 +385,7 @@ Agent 可用的 skills 按以下优先级查找：
 
 ## 参考配置
 
-当前环境中已配置的 agents 供参考：
+当前环境中已配置的 agents 结构供参考（agent id → 飞书 accountId）：
 - **main** → `feishu[kimiclaw_v2]`
 - **XiaoYou** → `feishu[xiaoyou]`
 - **player** → `feishu[player]`
