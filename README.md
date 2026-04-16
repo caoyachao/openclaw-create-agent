@@ -9,6 +9,7 @@
 - 设置记忆系统文件
 - 配置 openclaw.json
 - 绑定飞书 channel
+- 配置多 agent 协作权限
 
 ## 快速开始
 
@@ -30,7 +31,10 @@ cp templates/AGENTS.md ~/.openclaw/workspace/agents/myagent/
   "name": "myagent",
   "workspace": "/root/.openclaw/workspace/agents/myagent",
   "agentDir": "/root/.openclaw/agents/myagent",
-  "memorySearch": { "enabled": true }
+  "memorySearch": { "enabled": true },
+  "subagents": {
+    "allowAgents": ["*"]
+  }
 }
 
 # 4. 配置飞书账号并绑定
@@ -76,7 +80,32 @@ openclaw gateway restart
 
 所有 agent 继承 `agents.defaults.model.primary` 指定的默认模型。
 
+### 多 Agent 协作配置（v1.2.0 更新）
+
+配置 `subagents.allowAgents` 控制 agent 能否 spawn 其他 agents：
+
+```json
+{
+  "subagents": {
+    "allowAgents": ["*"]      // 允许 spawn 任何 agent
+    // "allowAgents": ["player", "writer"]  // 白名单模式
+    // "allowAgents": []  // 只能 spawn 自己
+  }
+}
+```
+
+| 配置值 | 效果 |
+|--------|------|
+| `["*"]` | `agents_list` 返回所有 agents，可 spawn 任何 agent |
+| `["player", "writer"]` | 只返回指定的 agents，只能 spawn 这些 agent |
+| `[]` 或未配置 | 只返回自己，只能 spawn 自己 |
+
 ## 版本历史
+
+### v1.2.0
+- 新增 `subagents.allowAgents` 配置
+- 支持多 agent 发现与协作
+- 更新快速开始示例
 
 ### v1.1.0
 - 移除 agent 级别的 `model` 字段配置

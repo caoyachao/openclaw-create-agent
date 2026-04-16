@@ -1,6 +1,6 @@
 ---
 name: openclaw-create-agent
-version: 1.1.0
+version: 1.2.0
 description: 在 OpenClaw 中创建一个新的 Agent 智能体，包括 workspace 目录结构、记忆系统文件、openclaw.json 配置修改、飞书 channel 与 binding 设置。适用于新增 AI 分身、多角色管理等场景。
 ---
 
@@ -104,6 +104,9 @@ output/
   "agentDir": "/root/.openclaw/agents/<your-agent-id>",
   "memorySearch": {
     "enabled": true
+  },
+  "subagents": {
+    "allowAgents": ["*"]
   }
 }
 ```
@@ -118,8 +121,21 @@ output/
 - `workspace`: **灵魂工作区路径**，系统会从这里读取人格文件（`IDENTITY.md`, `SOUL.md` 等）
 - `agentDir`: **运行时路径**，系统会自动创建 `sessions/` 和 `models.json`
 - `memorySearch.enabled`: 是否开启向量记忆检索，建议开启
+- `subagents.allowAgents`: 允许该 agent spawn 的其他 agent 列表，`["*"]` 表示允许 spawn 任何 agent
 
 > **关于模型配置**：模型不在 agent 级别单独配置，而是通过全局 `agents.defaults.model` 统一设置，所有 agent 继承默认模型。如需为特定 agent 指定不同模型，可在 `openclaw.json` 的 `agents.defaults.models` 中定义别名引用。
+
+### 关于 `subagents.allowAgents`
+
+`subagents.allowAgents` 配置控制该 agent 能否通过 `sessions_spawn` 启动其他 agent，以及在 `agents_list` 中能看到哪些 agent。
+
+| 配置值 | 含义 | `agents_list` 效果 |
+|--------|------|-------------------|
+| `["*"]` | 允许 spawn 任何 agent | `allowAny: true`，显示所有 agents |
+| `["player", "writer"]` | 白名单模式 | 只显示指定的 agents |
+| `[]` 或未配置 | 只能 spawn 自己 | 只返回自己 |
+
+**建议**：对于需要多 agent 协作的场景，设置为 `["*"]` 以启用完整的 agent 发现能力。
 
 ### 第 2 步：配置飞书 Channel 账号
 
@@ -347,7 +363,10 @@ feishu[writer-feishu]: received message from ...
         "name": "writer",
         "workspace": "/root/.openclaw/workspace/agents/writer",
         "agentDir": "/root/.openclaw/agents/writer",
-        "memorySearch": { "enabled": true }
+        "memorySearch": { "enabled": true },
+        "subagents": {
+          "allowAgents": ["*"]
+        }
       }
     ]
   },
@@ -378,7 +397,9 @@ feishu[writer-feishu]: received message from ...
 }
 ```
 
-> **注意**：模型配置在 `agents.defaults.model` 中统一设置，所有 agent 继承此默认模型。不再在单个 agent 配置中指定 `model` 字段。
+> **注意**：
+> - 模型配置在 `agents.defaults.model` 中统一设置，所有 agent 继承此默认模型
+> - `subagents.allowAgents: ["*"]` 启用完整的 agent 发现和多 agent 协作能力
 
 **关键对应关系图解**：
 
