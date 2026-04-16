@@ -1,5 +1,6 @@
 ---
 name: openclaw-create-agent
+version: 1.1.0
 description: 在 OpenClaw 中创建一个新的 Agent 智能体，包括 workspace 目录结构、记忆系统文件、openclaw.json 配置修改、飞书 channel 与 binding 设置。适用于新增 AI 分身、多角色管理等场景。
 ---
 
@@ -101,7 +102,6 @@ output/
   "name": "<your-agent-name>",
   "workspace": "/root/.openclaw/workspace/agents/<your-agent-id>",
   "agentDir": "/root/.openclaw/agents/<your-agent-id>",
-  "model": "<your-model-name>",
   "memorySearch": {
     "enabled": true
   }
@@ -111,15 +111,15 @@ output/
 > **占位符说明**：
 > - `<your-agent-id>`: Agent 的唯一标识，如 `writer`, `assistant`, `novelist`
 > - `<your-agent-name>`: 显示名称（可选，默认等于 id）
-> - `<your-model-name>`: 模型名称，如 `kimi-coding/k2p5`, `gpt-4` 等
 
 **字段说明**：
 - `id`: Agent 的唯一标识符，全系统唯一，不能与其他 agent 重复
 - `name`: 显示名称（可选），在日志和回复中显示
 - `workspace`: **灵魂工作区路径**，系统会从这里读取人格文件（`IDENTITY.md`, `SOUL.md` 等）
 - `agentDir`: **运行时路径**，系统会自动创建 `sessions/` 和 `models.json`
-- `model`: 该 Agent 使用的默认模型，决定其推理能力和风格
 - `memorySearch.enabled`: 是否开启向量记忆检索，建议开启
+
+> **关于模型配置**：模型不在 agent 级别单独配置，而是通过全局 `agents.defaults.model` 统一设置，所有 agent 继承默认模型。如需为特定 agent 指定不同模型，可在 `openclaw.json` 的 `agents.defaults.models` 中定义别名引用。
 
 ### 第 2 步：配置飞书 Channel 账号
 
@@ -252,12 +252,13 @@ EOF
   "name": "writer",
   "workspace": "/root/.openclaw/workspace/agents/writer",
   "agentDir": "/root/.openclaw/agents/writer",
-  "model": "kimi-coding/k2p5",
   "memorySearch": {
     "enabled": true
   }
 }
 ```
+
+> **注意**：模型不在 agent 级别配置，而是继承全局默认模型或通过 `agents.defaults.model` 统一设置。
 
 **② 配置飞书 channel**（添加到 `channels.feishu.accounts`）：
 
@@ -335,13 +336,17 @@ feishu[writer-feishu]: received message from ...
 ```json
 {
   "agents": {
+    "defaults": {
+      "model": {
+        "primary": "kimi-coding/k2p5"
+      }
+    },
     "list": [
       {
         "id": "writer",
         "name": "writer",
         "workspace": "/root/.openclaw/workspace/agents/writer",
         "agentDir": "/root/.openclaw/agents/writer",
-        "model": "kimi-coding/k2p5",
         "memorySearch": { "enabled": true }
       }
     ]
@@ -372,6 +377,8 @@ feishu[writer-feishu]: received message from ...
   }
 }
 ```
+
+> **注意**：模型配置在 `agents.defaults.model` 中统一设置，所有 agent 继承此默认模型。不再在单个 agent 配置中指定 `model` 字段。
 
 **关键对应关系图解**：
 
