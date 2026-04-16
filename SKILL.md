@@ -40,9 +40,39 @@ description: 在 OpenClaw 中创建一个新的 Agent 智能体，包括 workspa
 ├── memory/                # 每日记忆文件（`YYYY-MM-DD.md`）
 ├── diary/                 # 私密日记（碎片、观察、未请求的思考）
 ├── saves/                 # 游戏/项目存档（如适用）
+├── output/                # 任务/项目输出文件（详见 AGENTS.md 规范）
 └── .openclaw/
     └── workspace-state.json   # 状态标记
 ```
+
+### Output 文件夹规范（重要）
+
+**核心原则：所有任务/项目的输出文件必须结构化存放在 `output/` 目录下。**
+
+```
+output/
+├── task-001-description/     # 任务子目录
+│   ├── README.md            # 任务说明和上下文
+│   ├── files...             # 任务相关文件
+│   └── result/              # 最终输出
+├── project-name/            # 项目子目录
+│   ├── src/                 # 源代码
+│   ├── assets/              # 资源文件
+│   └── docs/                # 文档
+└── ...
+```
+
+**执行规则：**
+1. **每个新任务/项目** → 在 `output/` 下创建一个子目录
+2. **子目录命名** → 使用 `task-序号-简短描述` 或 `项目名称` 格式
+3. **默认创建** → 执行文件操作前，先创建 `output/` 目录（如不存在）
+4. **文件归属** → 所有生成的文件、下载的内容、脚本输出都放入对应子目录
+
+**为什么重要：**
+- 避免工作区根目录混乱
+- 任务可追踪、可回溯
+- 便于清理和归档
+- 支持多任务并行
 
 ### 必备文件清单（最小可运行集）
 
@@ -185,15 +215,17 @@ description: 在 OpenClaw 中创建一个新的 Agent 智能体，包括 workspa
 ### Step 1: 创建目录
 
 ```bash
-mkdir -p /root/.openclaw/workspace/agents/writer/{memory,diary,.openclaw}
+mkdir -p /root/.openclaw/workspace/agents/writer/{memory,diary,output,.openclaw}
 ```
+
+> **注意**：`output/` 目录用于存放所有任务/项目的输出文件，遵循 AGENTS.md 中的 Output 文件夹规范。
 
 ### Step 2: 写入人格文件
 
 创建以下文件（内容根据人设定制）：
 - `IDENTITY.md` — 名字、气质、signature line、emoji
 - `SOUL.md` — 核心性格、说话方式、品味与厌恶
-- `AGENTS.md` — 工作规范、记忆规则、心跳行为
+- `AGENTS.md` — 工作规范、记忆规则、心跳行为、**Output 文件夹规范**
 - `MEMORY.md` — 长期记忆起始页（职责、变更记录）
 - `USER.md` — 用户档案模板
 - `TOOLS.md` — 环境备忘模板
